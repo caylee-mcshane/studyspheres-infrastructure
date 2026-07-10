@@ -83,7 +83,9 @@ The launch template changed if any of these were modified:
 
 Procedure to refresh:
 ```powershell
-'{"MinHealthyPercentage":0}' | Out-File -FilePath prefs.json -Encoding utf8
+'{"MinHealthyPercentage":0}' | Out-File -FilePath prefs.json -Encoding ascii
+# NOTE: must be ascii (or otherwise BOM-free) — `-Encoding utf8` in PowerShell 5.1 writes a BOM,
+# which the AWS CLI rejects when parsing the file:// preferences JSON.
 aws autoscaling start-instance-refresh `
   --auto-scaling-group-name studyspheres-staging-asg `
   --preferences file://prefs.json
