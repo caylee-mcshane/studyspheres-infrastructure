@@ -3,6 +3,7 @@
 *.tfstate.*
 *.tfvars
 .DS_Store
-tfplan
+tfplan*
 prefs.json
 crash.log
+*.zip
