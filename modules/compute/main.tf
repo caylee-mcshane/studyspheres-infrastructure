@@ -2,6 +2,13 @@
 # Fetch current AWS account ID dynamically to use in IAM policies
 data "aws_caller_identity" "current" {}
 
+locals {
+  # Which SSM param holds the app's DB password: the master credential when
+  # connecting as postgres, the app role's when opted in (ADR-0004 Option B).
+  # Mirrors the same PG_USER-keyed selection in app.py's ensure_ssm_secrets.
+  db_password_param = var.db_app_user == "postgres" ? "PG_PASSWORD" : "PG_APP_PASSWORD"
+}
+
 # 1. AWS Systems Manager (SSM) Parameters for Secrets
 # These are created once manually or via CI — Terraform just references them
 resource "aws_ssm_parameter" "db_password" {
@@ -9,6 +16,20 @@ resource "aws_ssm_parameter" "db_password" {
   description = "Database password for ${var.environment}"
   type        = "SecureString"
   value       = var.db_password
+  lifecycle {
+    ignore_changes = [value] # Don't overwrite if manually updated in console
+  }
+}
+
+# Password for the dedicated non-owner app role (RLS enforcement, ADR-0004
+# Option B). Created only for environments that opt in via db_app_password;
+# the role itself is manual DDL (SSM -> psql), like the rest of the pg schema.
+resource "aws_ssm_parameter" "app_db_password" {
+  count       = var.db_app_password == "" ? 0 : 1
+  name        = "/studyspheres/${var.environment}/PG_APP_PASSWORD"
+  description = "Non-owner app role (${var.db_app_user}) database password for ${var.environment}"
+  type        = "SecureString"
+  value       = var.db_app_password
   lifecycle {
     ignore_changes = [value] # Don't overwrite if manually updated in console
   }
@@ -254,12 +275,12 @@ fetch_secret() {
     --region $REGION 2>/dev/null || echo ""
 }
 
-DB_PASSWORD=$(fetch_secret "PG_PASSWORD")
+DB_PASSWORD=$(fetch_secret "${local.db_password_param}")
 CLIENT_SECRET=$(fetch_secret "CLIENT_SECRET")
 GOOGLE_API_KEY=$(fetch_secret "GOOGLE_API_KEY")
 
 if [ -z "$DB_PASSWORD" ]; then
-  echo "ERROR: Could not fetch PG_PASSWORD from SSM. Check IAM permissions."
+  echo "ERROR: Could not fetch ${local.db_password_param} from SSM. Check IAM permissions."
 fi
 if [ -z "$CLIENT_SECRET" ]; then
   echo "ERROR: Could not fetch CLIENT_SECRET from SSM. Check IAM permissions."
@@ -289,7 +310,7 @@ CLIENT_SECRET=$CLIENT_SECRET
 PG_HOST=${replace(var.db_endpoint, ":5432", "")}
 PG_PORT=5432
 PG_DB_NAME=studyspheres
-PG_USER=postgres
+PG_USER=${var.db_app_user}
 PG_PASSWORD=$DB_PASSWORD
 
 # S3

@@ -10,6 +10,12 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "db_app_password" {
+  description = "Password for the studyspheres_app non-owner role (SSM PG_APP_PASSWORD)"
+  type        = string
+  sensitive   = true
+}
+
 variable "cognito_pool_id" {
   type    = string
   default = "us-east-1_zYyPI7xxr"

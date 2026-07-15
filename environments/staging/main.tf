@@ -63,6 +63,11 @@ module "compute" {
   db_endpoint        = module.database.db_endpoint
   db_password        = var.db_password
 
+  # App connects as the dedicated non-owner role so RLS enforces (ADR-0004
+  # Option B). The role is manual DDL on the staging DB; created 2026-07-15.
+  db_app_user        = "studyspheres_app"
+  db_app_password    = var.db_app_password
+
   cognito_pool_id    = var.cognito_pool_id
   cognito_client_id  = var.cognito_client_id
   cognito_domain     = var.cognito_domain
