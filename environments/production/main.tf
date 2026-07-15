@@ -65,7 +65,21 @@ module "compute" {
   private_subnet_ids = module.networking.private_subnet_ids
   db_endpoint        = module.database.db_endpoint
   db_password        = module.database.db_password
-  
+
+  # Cognito identifiers (public, not secrets). Currently the same single
+  # user pool as staging (us-east-1_zYyPI7xxr) — see architecture docs. These
+  # became required module args in 4022136; production's call had not been
+  # updated, so `terraform validate`/`plan` failed here. Hygiene fix only —
+  # production remains undeployed (no app, no S3 buckets, most SSM secrets
+  # absent); see the prod-launch checklist before any prod apply.
+  #
+  # NOTE: db_app_user is intentionally left at its module default (postgres).
+  # Option B (studyspheres_app role) is folded into the future prod launch,
+  # baked in from day one at that point — not applied to this dead instance.
+  cognito_pool_id    = "us-east-1_zYyPI7xxr"
+  cognito_client_id  = "5fh6oeet0a8tm4soth3hhpfcn7"
+  cognito_domain     = "us-east-1zyypi7xxr.auth.us-east-1.amazoncognito.com"
+
   # Production Auto-Scaling constraints
   instance_type      = "t3.small"
   min_size           = 1  # Standard load
