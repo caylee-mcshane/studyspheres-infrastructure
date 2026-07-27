@@ -1,6 +1,6 @@
 # Infrastructure — Agent Context
 
-This is the **Terraform infrastructure** for StudySpheres (`C:\studyspheres\studyspheres-infrastructure` — local-only, not yet in GitHub).
+This is the **Terraform infrastructure** for StudySpheres (`C:\studyspheres\studyspheres-infrastructure` — GitHub: `caylee-mcshane/studyspheres-infrastructure`).
 
 ## Before making any change, read
 
@@ -8,14 +8,27 @@ This is the **Terraform infrastructure** for StudySpheres (`C:\studyspheres\stud
 2. **[`studyspheres-docs/runbooks/deploy.md`](https://github.com/caylee-mcshane/studyspheres-docs/blob/main/runbooks/deploy.md)** — apply procedure with safety checks
 3. **All ADRs in [`studyspheres-docs/adrs/`](https://github.com/caylee-mcshane/studyspheres-docs/tree/main/adrs/)** — they encode why the infrastructure looks the way it does
 
+## Navigating architecture.md
+
+| When you need | Read section |
+|---|---|
+| Module/directory layout, what lives where | Deployment Workflow → Terraform Module Structure |
+| Live resource IDs (ASG, RDS endpoint, CloudFront, ALB, Cognito) | AWS Resource Reference → Key IDs (staging) |
+| SSM parameter paths and which credential is which | AWS Resource Reference → SSM Parameters (staging) |
+| The DB roles story: PG_PASSWORD vs PG_APP_PASSWORD, Option B, rollback | Data Layer → PostgreSQL Schema — the DDL block and the RLS enforcement paragraphs after it |
+| DynamoDB tables, keys, GSIs, TTL | Data Layer → DynamoDB Tables |
+| VPC/subnets/CloudFront/VPC endpoints | Networking |
+| EC2/systemd/user-data expectations, healthy startup lines | Compute |
+| What's actually live per environment (production is provisioned, not deployed) | Environments (and `notes/production-launch-checklist.md` before any prod work) |
+
 ## Critical rules — must never violate
 
 1. **Never run `terraform apply` without reviewing the plan first.** Always read the "X to add, Y to change, Z to destroy" line and inspect every line under "destroy."
 2. **`terraform destroy` is essentially never the right answer.** Comment out resources or remove blocks, then `apply` — let Terraform figure out what changes.
 3. **Deletion protection is on every DynamoDB table.** Do NOT remove it. If you genuinely need to recreate a table, the runbook covers the temp-disable + recreate dance.
-4. **Hardcoded production resources don't exist yet** — `environments/production/main.tf` has structure but no resources have been created. When standing up production, use `cd environments/production && terraform apply`. Do NOT modify staging to "also" be production.
+4. **Production is provisioned but undeployed** — `environments/production/main.tf` has created real resources (VPC, RDS, ASG — it calls only the networking/database/compute modules, 3 of the 6), but there is no app, no S3 buckets, most SSM secrets are absent, and there are no users. See `notes/production-launch-checklist.md` before any production work. When standing up production, use `cd environments/production && terraform apply`. Do NOT modify staging to "also" be production.
 5. **State is in S3 (`studyspheres-terraform-state-2026`) with DynamoDB lock table.** Never edit state files by hand. If state seems corrupt, ask before running `terraform state` commands.
-6. **DB password and other secrets** flow through SSM Parameter Store, NOT Terraform variables. The exception is `db_password` which is prompted at plan/apply time — there's a remaining task to add a `terraform.tfvars` for that.
+6. **DB password and other secrets** flow through SSM Parameter Store, NOT Terraform variables. The exception: staging prompts for TWO sensitive variables at plan/apply time — `db_password` (seeds `aws_ssm_parameter.db_password`, the master `PG_PASSWORD` param) and `db_app_password` (seeds `aws_ssm_parameter.app_db_password`, the `studyspheres_app` role's `PG_APP_PASSWORD` param). The compute module's `db_app_user` variable selects which parameter the app reads — see ADR-0004 (Option B). There's a remaining task to add a `terraform.tfvars` for the prompts.
 
 ## Module conventions
 
@@ -25,15 +38,17 @@ studyspheres-infrastructure/
 │   └── main.tf
 ├── environments/
 │   ├── staging/main.tf       ← root config — calls all modules with environment="staging"
-│   └── production/main.tf    ← (planned)
+│   └── production/main.tf    ← provisioned, undeployed — calls only networking/database/compute (3 of 6 modules)
 └── modules/
     ├── compute/              ← EC2, ASG, ALB, SQS, IAM role + policy, user data script
     ├── database/             ← RDS PostgreSQL only
     ├── dynamodb/             ← All NoSQL tables (added v1.4)
     ├── networking/           ← VPC, subnets, route tables, IGW, NAT
-    ├── security/             ← Cognito, IAM (some — most IAM lives in compute module)
+    ├── security/             ← Cognito identity pool + test user-pool client, IAM roles/policies, GitHub Actions OIDC provider (github-actions-oidc.tf)
     └── storage/              ← S3 buckets, CloudFront, OAC
 ```
+
+The Cognito **user pool** (`us-east-1_zYyPI7xxr`) is NOT Terraform-managed — no `aws_cognito_user_pool` resource exists in this repo; its pool/client/domain IDs are passed in as variables with defaults.
 
 ### Resource naming
 - DynamoDB: `${var.environment}-TableName` (e.g., `staging-UserProfiles`)
@@ -64,6 +79,8 @@ terraform plan
 # so a rotated value survives apply). The RDS master password itself comes from
 # random_password.db_password in modules/database. Retrieve the current value with:
 #   aws ssm get-parameter --name /studyspheres/staging/PG_PASSWORD --with-decryption
+# (plan also prompts for db_app_password — the studyspheres_app role's credential,
+#  SSM /studyspheres/staging/PG_APP_PASSWORD; see ADR-0004 Option B)
 # Do not write the value into any file.
 
 # 2. Read the plan output carefully:
@@ -112,7 +129,7 @@ Use these for cross-module wiring rather than hardcoding ARNs.
 | Symptom | Most likely cause |
 |---|---|
 | `terraform plan` wants to recreate every resource | Probably running from the wrong directory or wrong workspace |
-| DB password prompt every time | No `terraform.tfvars` — known remaining task |
+| DB password prompts (two: `db_password`, `db_app_password`) every time | No `terraform.tfvars` — known remaining task |
 | Apply fails with "ResourceInUseException" on DynamoDB | Manually-created table with the same name exists. Drop it first with the runbook script |
 | EC2 IAM role missing a permission | Compute module's IAM policy uses wildcards (`dynamodb:*`, `s3:*`) — should cover most things. Cognito is deliberately scoped, not wildcarded: `AdminGetUser`, `AdminUpdateUserAttributes`, `AdminDeleteUser`, `ListUsers` on the env's user pool ARN only — a new Cognito API call in the backend needs a policy addition |
 | Plan shows `0 to add, 0 to change, 0 to destroy` but state seems stale | Run `terraform refresh` |
