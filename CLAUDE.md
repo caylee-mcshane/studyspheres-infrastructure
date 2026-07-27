@@ -58,7 +58,13 @@ cd C:\studyspheres\studyspheres-infrastructure\environments\staging
 
 # 1. Always plan first
 terraform plan
-# (prompts for db_password — value is in the architecture doc resource reference)
+# When prompted for db_password: this does NOT set the RDS master password — it
+# only seeds modules/compute's aws_ssm_parameter.db_password, i.e. SSM
+# /studyspheres/staging/PG_PASSWORD (which has lifecycle ignore_changes on value,
+# so a rotated value survives apply). The RDS master password itself comes from
+# random_password.db_password in modules/database. Retrieve the current value with:
+#   aws ssm get-parameter --name /studyspheres/staging/PG_PASSWORD --with-decryption
+# Do not write the value into any file.
 
 # 2. Read the plan output carefully:
 #    - Any "destroy" lines need scrutiny
