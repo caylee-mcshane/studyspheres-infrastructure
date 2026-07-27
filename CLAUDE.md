@@ -108,7 +108,7 @@ Use these for cross-module wiring rather than hardcoding ARNs.
 | `terraform plan` wants to recreate every resource | Probably running from the wrong directory or wrong workspace |
 | DB password prompt every time | No `terraform.tfvars` — known remaining task |
 | Apply fails with "ResourceInUseException" on DynamoDB | Manually-created table with the same name exists. Drop it first with the runbook script |
-| EC2 IAM role missing a permission | Compute module's IAM policy uses wildcards (`dynamodb:*`, `s3:*`) — should cover most things. Cognito IS NOT wildcarded — that's a known IAM gap |
+| EC2 IAM role missing a permission | Compute module's IAM policy uses wildcards (`dynamodb:*`, `s3:*`) — should cover most things. Cognito is deliberately scoped, not wildcarded: `AdminGetUser`, `AdminUpdateUserAttributes`, `AdminDeleteUser`, `ListUsers` on the env's user pool ARN only — a new Cognito API call in the backend needs a policy addition |
 | Plan shows `0 to add, 0 to change, 0 to destroy` but state seems stale | Run `terraform refresh` |
 
 ## When uncertain
