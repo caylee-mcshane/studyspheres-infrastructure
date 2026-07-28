@@ -155,7 +155,10 @@ resource "aws_dynamodb_table" "promo_codes" {
 #    Per-event log of every AI tool invocation: tool, status, cost, model.
 #    GSI on userSub+timestamp powers per-user analytics views.
 #    GSI on tool+timestamp powers product-wide tool usage dashboards.
+#    GSI on sessionId joins events to the generation session (failure log trace).
 #    Streams enabled — future aggregation Lambda can roll up stats hourly.
+#    No TTL — analytics data is retained indefinitely for trending/forecasting
+#    (deliberate decision D-8; do not "fix" by adding a ttl block).
 # ----------------------------------------------------------------------------
 resource "aws_dynamodb_table" "analytics_events" {
   name         = "${var.environment}-AnalyticsEvents"
@@ -178,6 +181,10 @@ resource "aws_dynamodb_table" "analytics_events" {
     name = "timestamp"
     type = "S"
   }
+  attribute {
+    name = "sessionId"
+    type = "S"
+  }
 
   global_secondary_index {
     name            = "userSub-timestamp-index"
@@ -190,6 +197,14 @@ resource "aws_dynamodb_table" "analytics_events" {
     name            = "tool-timestamp-index"
     hash_key        = "tool"
     range_key       = "timestamp"
+    projection_type = "ALL"
+  }
+
+  # sessionId joins an analytics event to the ProcessingSessions generation the
+  # user saw — the trace handle for the durable failure log (Campaign E, D-2).
+  global_secondary_index {
+    name            = "sessionId-index"
+    hash_key        = "sessionId"
     projection_type = "ALL"
   }
 
