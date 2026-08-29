@@ -1,7 +1,8 @@
-<!-- SYNCED FILE — byte-identical in backend, frontend, studyspheres-infrastructure
+<!-- SYNCED FILE — identical in content in backend, frontend, studyspheres-infrastructure
      and studyspheres-docs. Canonical copy: manager/rules-canonical/applying-text.md
      Do not edit here. Edit the canonical copy, then propagate to all four.
-     A hash mismatch across the four copies is a finding, not a formatting nit. -->
+     Line endings differ by repo git config and are not drift; any difference in
+     the text is. Verify with manager/tools/check-rule-sync.py. -->
 
 ## Standing rule — applying text to a file
 
