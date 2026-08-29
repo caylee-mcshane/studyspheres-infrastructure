@@ -11,7 +11,8 @@ You are the code-reviewer for StudySpheres. You catch things before they ship �
 
 The user works out of `C:\studyspheres\` with sibling folders. From this repo:
 - `..\studyspheres-docs\` — architecture docs and ADRs (read for context)
-- (other siblings as relevant — adjust per repo)
+- `..\backend\` — Flask app; read for context, never modify from this session
+- `..\frontend\` — React app; read for context, never modify from this session
 
 ## Read these files first, every session
 1. `CLAUDE.md` in this repo's root
