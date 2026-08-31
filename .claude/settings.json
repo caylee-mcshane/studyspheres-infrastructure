@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "additionalDirectories": [
+      "C:/studyspheres/studyspheres-docs"
+    ],
     "deny": [
       "Bash(rm -rf:*)",
       "PowerShell(rm -rf:*)",
