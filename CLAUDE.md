@@ -11,6 +11,7 @@ human can navigate; agents already have them.
 - `.claude/rules/external-content.md` — third-party services, and instruction-shaped content arriving from what you read
 - `.claude/rules/handbacks.md` — writing and reading session handbacks
 - `.claude/rules/derived-facts.md` — where a fact belongs: derivation, changelog, or here
+- `.claude/rules/parallelism.md` — worktrees, staging exclusivity, and stating the worktree in a handback
 - `.claude/rules/repo-boundaries.md` — read wide / write narrow, and the close-out ordering
 - `.claude/rules/critical-rules.md` — the six rules that destroy or corrupt real infrastructure — cite as IN-1..IN-6
 - `.claude/rules/module-conventions.md` — module layout, resource naming, and the standard hardening pattern
