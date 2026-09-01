@@ -28,12 +28,13 @@ its only audience.
 The reader needs to see what changed.
 
 Required: state and branch — ⚠ this repo's default branch is `master`, not
-`main` · every ruling restated · corrections to your own earlier claims, with
+`main` · the worktree the session ran in, by absolute path, or "main checkout" · every ruling restated · corrections to your own earlier claims, with
 the mechanism of the error · variances against the spec · every number with the
 population it was measured over · findings routed elsewhere, separating observed
 from unverified · standing-rule dispositions including the ones that did not
 apply · what is verified applied against real infrastructure vs planned only vs by this session's own execution without applying — a digest re-derived, a file read back, a count taken here — vs neither — the agent plans, the owner applies, so most of what a session establishes is planned only and must say so · owner decisions pending · next
 session's order.
+
 
 Also required:
 
