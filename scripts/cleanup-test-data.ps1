@@ -49,7 +49,7 @@ function Resolve-TestUserSub {
         --region $AwsRegion `
         --output json 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  WARN: could not resolve sub for $Email — skipping" -ForegroundColor Yellow
+        Write-Host "  WARN: could not resolve sub for $Email - skipping" -ForegroundColor Yellow
         return $null
     }
     $obj = $json | ConvertFrom-Json
