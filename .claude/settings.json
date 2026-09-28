@@ -29,7 +29,10 @@
     ],
     "allow": [
       "Bash(git commit:*)",
-      "PowerShell(git commit:*)"
+      "PowerShell(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)"
     ]
   }
 }
