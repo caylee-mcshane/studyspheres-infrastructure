@@ -102,7 +102,7 @@ function New-StrongPassword {
 
 function Test-CognitoUserExists {
     param([string]$Email)
-    aws cognito-idp admin-get-user `
+    aws cognito-idp admin-get-user --profile studyspheres `
         --user-pool-id $UserPoolId `
         --username $Email `
         --region $AwsRegion 2>&1 | Out-Null
@@ -133,7 +133,7 @@ for ($i = 1; $i -le $UserCount; $i++) {
 
     if (-not $exists) {
         Write-Host "  Creating user (suppressing email)..." -ForegroundColor Cyan
-        aws cognito-idp admin-create-user `
+        aws cognito-idp admin-create-user --profile studyspheres `
             --user-pool-id $UserPoolId `
             --username $email `
             --user-attributes "Name=email,Value=$email" "Name=email_verified,Value=true" `
@@ -148,7 +148,7 @@ for ($i = 1; $i -le $UserCount; $i++) {
     }
 
     Write-Host "  Setting permanent password..." -ForegroundColor Cyan
-    aws cognito-idp admin-set-user-password `
+    aws cognito-idp admin-set-user-password --profile studyspheres `
         --user-pool-id $UserPoolId `
         --username $email `
         --password $password `
@@ -200,7 +200,7 @@ COGNITO_TEST_CLIENT_ID=$testClientId
 Write-Host ""
 Write-Host "--- Writing SSM parameters under /studyspheres/test/ ---" -ForegroundColor Cyan
 
-aws ssm put-parameter `
+aws ssm put-parameter --profile studyspheres `
     --name "/studyspheres/test/cognito_test_client_id" `
     --value $testClientId `
     --type "String" `
@@ -209,7 +209,7 @@ aws ssm put-parameter `
 Write-Host "  /studyspheres/test/cognito_test_client_id" -ForegroundColor Green
 
 foreach ($user in $activeUsers) {
-    aws ssm put-parameter `
+    aws ssm put-parameter --profile studyspheres `
         --name "/studyspheres/test/user_$($user.Index)_email" `
         --value $user.Email `
         --type "String" `
@@ -217,7 +217,7 @@ foreach ($user in $activeUsers) {
         --region $AwsRegion | Out-Null
     Write-Host "  /studyspheres/test/user_$($user.Index)_email" -ForegroundColor Green
 
-    aws ssm put-parameter `
+    aws ssm put-parameter --profile studyspheres `
         --name "/studyspheres/test/user_$($user.Index)_password" `
         --value $user.Password `
         --type "SecureString" `
@@ -234,7 +234,7 @@ Write-Host "--- Verifying authentication for each user ---" -ForegroundColor Cya
 foreach ($user in $activeUsers) {
     Write-Host -NoNewline "  $($user.Email)... "
 
-    $authResult = aws cognito-idp initiate-auth `
+    $authResult = aws cognito-idp initiate-auth --profile studyspheres `
         --client-id $testClientId `
         --auth-flow USER_PASSWORD_AUTH `
         --auth-parameters "USERNAME=$($user.Email),PASSWORD=$($user.Password)" `

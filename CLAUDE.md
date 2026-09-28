@@ -60,7 +60,7 @@ terraform plan
 # /studyspheres/staging/PG_PASSWORD (which has lifecycle ignore_changes on value,
 # so a rotated value survives apply). The RDS master password itself comes from
 # random_password.db_password in modules/database. Retrieve the current value with:
-#   aws ssm get-parameter --name /studyspheres/staging/PG_PASSWORD --with-decryption
+#   aws ssm get-parameter --profile studyspheres --name /studyspheres/staging/PG_PASSWORD --with-decryption
 # (plan also prompts for db_app_password — the studyspheres_app role's credential,
 #  SSM /studyspheres/staging/PG_APP_PASSWORD; see ADR-0004 Option B)
 # Do not write the value into any file.
@@ -91,7 +91,7 @@ Procedure to refresh:
 '{"MinHealthyPercentage":0}' | Out-File -FilePath prefs.json -Encoding ascii
 # NOTE: must be ascii (or otherwise BOM-free) — `-Encoding utf8` in PowerShell 5.1 writes a BOM,
 # which the AWS CLI rejects when parsing the file:// preferences JSON.
-aws autoscaling start-instance-refresh `
+aws autoscaling start-instance-refresh --profile studyspheres `
   --auto-scaling-group-name studyspheres-staging-asg `
   --preferences file://prefs.json
 ```

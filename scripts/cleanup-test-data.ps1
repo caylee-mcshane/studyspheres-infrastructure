@@ -43,7 +43,7 @@ $ErrorActionPreference = "Continue"
 
 function Resolve-TestUserSub {
     param([string]$Email)
-    $json = aws cognito-idp admin-get-user `
+    $json = aws cognito-idp admin-get-user --profile studyspheres `
         --user-pool-id $UserPoolId `
         --username $Email `
         --region $AwsRegion `
@@ -67,7 +67,7 @@ function Remove-DynamoItem {
         return
     }
     $keyJson = $Key | ConvertTo-Json -Compress
-    aws dynamodb delete-item `
+    aws dynamodb delete-item --profile studyspheres `
         --table-name $TableName `
         --key $keyJson `
         --region $AwsRegion 2>&1 | Out-Null
@@ -127,7 +127,7 @@ foreach ($sub in $testSubs) {
 Write-Host ""
 Write-Host "Sweep 3: scanning staging-UserProfiles for orphan test- displayNames..." -ForegroundColor Cyan
 
-$scanResult = aws dynamodb scan `
+$scanResult = aws dynamodb scan --profile studyspheres `
     --table-name "staging-UserProfiles" `
     --filter-expression "begins_with(displayName, :prefix)" `
     --expression-attribute-values '{\":prefix\":{\"S\":\"test-\"}}' `
